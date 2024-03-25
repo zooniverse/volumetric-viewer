@@ -1,0 +1,142 @@
+:root {
+	--primary: #008080;
+	--secondary: #F0B200;
+	--tertiary: #D47811;
+	--dark: #005D69;
+	--dark-text: #2D2D2D;
+	--bright: #F71735;
+	--bright-text: #EDFFEC;
+	--grey: #C6C6C6;
+	--primary-accent: #25daa5;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: #222222;
+  color: #ddd;
+}
+
+/****************************/
+
+.container {
+  display: flex;
+  flex-direction: row;
+}
+
+.sidebar {
+	min-width: 300px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  margin: 0px 20px;
+}
+
+.heading {
+  padding-bottom: 10px;
+}
+
+.viewer {
+	flex: 1;
+	display: flex;
+  flex-direction: row;
+	flex-wrap: wrap;
+  height: 100vh;
+}
+
+.viewer > * {
+	width: 50%;
+	height: 50%;
+
+	display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #999;
+}
+
+.select {
+  margin-bottom: 30px;
+}
+
+/****************************/
+
+.range-flex {
+  display: flex;
+  flex-direction: row;
+	align-items: center;
+}
+
+.flex-1 {
+	flex: 1;
+}
+
+.range-slider-control {
+  min-height: 30px;
+	margin: 10px 0px;
+}
+
+.range-slider-control .range-slider {
+	flex-grow: 1;
+	position: relative;
+}
+
+.range-slider-min-value {
+	padding: 5px 10px 0px 0px;
+}
+.range-slider-max-value {
+	padding: 5px 0px 0px 10px;
+}
+
+.range-slider-dual {
+  -webkit-appearance: none; 
+  appearance: none;
+  height: 2px;
+  width: 100%;
+  position: absolute;
+  background-color: var(--grey);
+  pointer-events: none;
+}
+
+.range-slider-dual::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: all;
+  width: 24px;
+  height: 24px;
+  background-color: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--grey);
+  cursor: pointer;
+}
+
+.range-slider-dual::-moz-range-thumb {
+  -webkit-appearance: none;
+  pointer-events: all;
+  width: 24px;
+  height: 24px;
+  background-color: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--grey);
+  cursor: pointer;  
+}
+
+.range-slider-dual.range-slider-lower-value {
+  height: 0;
+  z-index: 1;
+}
+
+.range-input-control .spacer {
+	flex-grow: 1;
+}
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button {  
+   opacity: 1;
+}
