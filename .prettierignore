@@ -1,0 +1,5 @@
+# Ignore artifacts:
+.next
+ignore
+public
+node_modules
