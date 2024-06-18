@@ -22,39 +22,18 @@ export const Cube = ({ points }) => {
     threeRef.current.scene.add(threeRef.current.meshPlane);
 
     renderActivePoints();
-    threeRef.current.meshActive.name = "active";
-    threeRef.current.scene.add(threeRef.current.meshActive);
-
     animate();
 
     // Setup State Listeners
-    points.on(`change:dimension:frame`, ({ dimension, frame }) => {
-      renderPlanePoints();
-      threeRef.current.meshPlane.instanceMatrix.needsUpdate = true;
-      threeRef.current.meshPlane.instanceColor.needsUpdate = true;
-    });
+    points.on(`change:dimension:frame`, renderPlanePoints);
+    points.on(`change:threshold`, renderPlanePoints);
+    points.on(`change:pointsActive`, renderActivePoints);
 
-    points.on(`change:threshold`, ({ min, max }) => {
-      renderPlanePoints();
-      threeRef.current.meshPlane.instanceMatrix.needsUpdate = true;
-      threeRef.current.meshPlane.instanceColor.needsUpdate = true;
-    });
-
-    points.on(`change:pointsActive`, ({ set }) => {
-      // remove the old meshActive since pointsActive changes
-      threeRef.current.scene.remove(threeRef.current.meshActive);
-      threeRef.current.meshActive = new THREE.InstancedMesh(
-        new THREE.BoxGeometry(1, 1, 1),
-        new THREE.MeshBasicMaterial({ color: 0xffffff }),
-        points.pointsActive.data.length,
-      );
-
-      // render and add the mesh back to the scene
-      renderActivePoints();
-      threeRef.current.meshActive.name = "active";
-      threeRef.current.scene.add(threeRef.current.meshActive);
-      threeRef.current.meshActive.instanceMatrix.needsUpdate = true;
-    });
+		return () => {
+			points.off(`change:dimension:frame`, renderPlanePoints);
+			points.off(`change:threshold`, renderPlanePoints);
+			points.off(`change:pointsActive`, renderActivePoints);
+		}
   }, []);
 
   useLayoutEffect(() => {
@@ -212,7 +191,9 @@ export const Cube = ({ points }) => {
   }
 
   function renderPlanePoints() {
-    const frames = points.planeFrameActive;
+		const t0 = performance.now();
+
+		const frames = points.planeFrameActive;
     const sets = frames.map((frame, dimension) =>
       points.getPlaneSet({ dimension, frame }),
     );
@@ -226,9 +207,22 @@ export const Cube = ({ points }) => {
         point,
       });
     });
+		console.log('render', performance.now() - t0);
+
+		threeRef.current.meshPlane.instanceMatrix.needsUpdate = true;
+		threeRef.current.meshPlane.instanceColor.needsUpdate = true;
   }
 
   function renderActivePoints() {
+		// remove the old meshActive since pointsActive changes
+		threeRef.current.scene.remove(threeRef.current.meshActive);
+		threeRef.current.meshActive = new THREE.InstancedMesh(
+			new THREE.BoxGeometry(1, 1, 1),
+			new THREE.MeshBasicMaterial({ color: 0xffffff }),
+			points.pointsActive.data.length,
+		);
+		
+		// render
     points.pointsActive.data.forEach((point, index) => {
       drawMeshPoint({
         isPointActive: true,
@@ -237,6 +231,11 @@ export const Cube = ({ points }) => {
         point,
       });
     });
+
+		//  add the mesh back to the scene
+		threeRef.current.meshActive.name = "active";
+		threeRef.current.scene.add(threeRef.current.meshActive);
+		threeRef.current.meshActive.instanceMatrix.needsUpdate = true;
   }
 
   function drawMeshPoint({ isPointActive, mesh, meshIndex, point }) {

@@ -18,6 +18,12 @@ export const Plane = ({ dimension, points }) => {
     points.on(`change:dimension-${dimension}:frame`, drawFrame);
     points.on(`change:threshold`, drawFrame);
     points.on(`change:pointsActive`, drawFrame);
+
+		return () => {
+			points.off(`change:dimension-${dimension}:frame`, drawFrame);
+			points.off(`change:threshold`, drawFrame);
+			points.off(`change:pointsActive`, drawFrame);
+			}
   }, []);
 
   // Layout Effects allows us to listen for window resize
