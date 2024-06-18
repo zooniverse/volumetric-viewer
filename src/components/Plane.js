@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
-import { pointColor } from "./helper.js";
+import { pointColor, Colors } from "./helper.js";
 
 export const Plane = ({ dimension, points }) => {
   const CANVAS_PADDING = 25; // extra space around element
@@ -18,6 +18,12 @@ export const Plane = ({ dimension, points }) => {
     points.on(`change:dimension-${dimension}:frame`, drawFrame);
     points.on(`change:threshold`, drawFrame);
     points.on(`change:pointsActive`, drawFrame);
+
+		return () => {
+			points.off(`change:dimension-${dimension}:frame`, drawFrame);
+			points.off(`change:threshold`, drawFrame);
+			points.off(`change:pointsActive`, drawFrame);
+			}
   }, []);
 
   // Layout Effects allows us to listen for window resize
@@ -62,7 +68,7 @@ export const Plane = ({ dimension, points }) => {
   function drawPoint({ context, point, x, y }) {
     // Draw points that are not in threshold same color as background
     if (points.isInThreshold({ point })) {
-      context.fillStyle = pointColor({
+			context.fillStyle = pointColor({
         isPointActive: points.pointsActiveAbsolute[point] !== 0,
         pointValue: points.getPointValue({ point }),
       });

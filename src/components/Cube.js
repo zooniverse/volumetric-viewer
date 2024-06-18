@@ -1,4 +1,7 @@
-import * as THREE from "three";
+import {
+	BoxGeometry, Color, HemisphereLight, InstancedMesh, Matrix4, MeshBasicMaterial,
+	Object3D, PerspectiveCamera, Raycaster, Scene, Vector2, WebGLRenderer
+} from "three";
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { pointColor } from "./helper.js";
@@ -22,39 +25,18 @@ export const Cube = ({ points }) => {
     threeRef.current.scene.add(threeRef.current.meshPlane);
 
     renderActivePoints();
-    threeRef.current.meshActive.name = "active";
-    threeRef.current.scene.add(threeRef.current.meshActive);
-
     animate();
 
     // Setup State Listeners
-    points.on(`change:dimension:frame`, ({ dimension, frame }) => {
-      renderPlanePoints();
-      threeRef.current.meshPlane.instanceMatrix.needsUpdate = true;
-      threeRef.current.meshPlane.instanceColor.needsUpdate = true;
-    });
+    points.on(`change:dimension:frame`, renderPlanePoints);
+    points.on(`change:threshold`, renderPlanePoints);
+    points.on(`change:pointsActive`, renderActivePoints);
 
-    points.on(`change:threshold`, ({ min, max }) => {
-      renderPlanePoints();
-      threeRef.current.meshPlane.instanceMatrix.needsUpdate = true;
-      threeRef.current.meshPlane.instanceColor.needsUpdate = true;
-    });
-
-    points.on(`change:pointsActive`, ({ set }) => {
-      // remove the old meshActive since pointsActive changes
-      threeRef.current.scene.remove(threeRef.current.meshActive);
-      threeRef.current.meshActive = new THREE.InstancedMesh(
-        new THREE.BoxGeometry(1, 1, 1),
-        new THREE.MeshBasicMaterial({ color: 0xffffff }),
-        points.pointsActive.data.length,
-      );
-
-      // render and add the mesh back to the scene
-      renderActivePoints();
-      threeRef.current.meshActive.name = "active";
-      threeRef.current.scene.add(threeRef.current.meshActive);
-      threeRef.current.meshActive.instanceMatrix.needsUpdate = true;
-    });
+		return () => {
+			points.off(`change:dimension:frame`, renderPlanePoints);
+			points.off(`change:threshold`, renderPlanePoints);
+			points.off(`change:pointsActive`, renderActivePoints);
+		}
   }, []);
 
   useLayoutEffect(() => {
@@ -75,29 +57,29 @@ export const Cube = ({ points }) => {
     // Setup Ref object once DOM is rendered
     threeRef.current = {
       canvas: null,
-      camera: new THREE.PerspectiveCamera(100, width / height, 0.01, 3000),
-      cubes: new THREE.Object3D(),
+      camera: new PerspectiveCamera(100, width / height, 0.01, 3000),
+      cubes: new Object3D(),
       isShift: false,
       isClicked: -1,
       lastRender: 0,
-      light: new THREE.HemisphereLight(0xffffff, 0x888888, 3),
-      matrix: new THREE.Matrix4(),
-      mouse: new THREE.Vector2(1, 1),
+      light: new HemisphereLight(0xffffff, 0x888888, 3),
+      matrix: new Matrix4(),
+      mouse: new Vector2(1, 1),
       mouseDown: 0,
-      meshPlane: new THREE.InstancedMesh(
-        new THREE.BoxGeometry(1, 1, 1),
-        new THREE.MeshBasicMaterial({ color: 0xffffff }),
+      meshPlane: new InstancedMesh(
+        new BoxGeometry(1, 1, 1),
+        new MeshBasicMaterial({ color: 0xffffff }),
         NUM_MESH_POINTS,
       ),
-      meshActive: new THREE.InstancedMesh(
-        new THREE.BoxGeometry(1, 1, 1),
-        new THREE.MeshBasicMaterial({ color: 0xffffff }),
+      meshActive: new InstancedMesh(
+        new BoxGeometry(1, 1, 1),
+        new MeshBasicMaterial({ color: 0xffffff }),
         points.pointsActive.data.length,
       ),
       orbit: null,
-      raycaster: new THREE.Raycaster(),
+      raycaster: new Raycaster(),
       renderer: null,
-      scene: new THREE.Scene(),
+      scene: new Scene(),
     };
 
     // Setup camera, light, scene, and orbit controls
@@ -108,10 +90,10 @@ export const Cube = ({ points }) => {
 
     threeRef.current.meshPlane.name = "plane";
 
-    threeRef.current.scene.background = new THREE.Color(0x222222);
+    threeRef.current.scene.background = new Color(0x222222);
     threeRef.current.scene.add(threeRef.current.light);
 
-    threeRef.current.renderer = new THREE.WebGLRenderer({
+    threeRef.current.renderer = new WebGLRenderer({
       canvas: canvasRef.current,
     });
     threeRef.current.renderer.setPixelRatio(window.devicePixelRatio);
@@ -212,7 +194,9 @@ export const Cube = ({ points }) => {
   }
 
   function renderPlanePoints() {
-    const frames = points.planeFrameActive;
+		const t0 = performance.now();
+
+		const frames = points.planeFrameActive;
     const sets = frames.map((frame, dimension) =>
       points.getPlaneSet({ dimension, frame }),
     );
@@ -226,9 +210,22 @@ export const Cube = ({ points }) => {
         point,
       });
     });
+		console.log('Performance: renderPlanePoints()', performance.now() - t0);
+
+		threeRef.current.meshPlane.instanceMatrix.needsUpdate = true;
+		threeRef.current.meshPlane.instanceColor.needsUpdate = true;
   }
 
   function renderActivePoints() {
+		// remove the old meshActive since pointsActive changes
+		threeRef.current.scene.remove(threeRef.current.meshActive);
+		threeRef.current.meshActive = new InstancedMesh(
+			new BoxGeometry(1, 1, 1),
+			new MeshBasicMaterial({ color: 0xffffff }),
+			points.pointsActive.data.length,
+		);
+		
+		// render
     points.pointsActive.data.forEach((point, index) => {
       drawMeshPoint({
         isPointActive: true,
@@ -237,6 +234,11 @@ export const Cube = ({ points }) => {
         point,
       });
     });
+
+		//  add the mesh back to the scene
+		threeRef.current.meshActive.name = "active";
+		threeRef.current.scene.add(threeRef.current.meshActive);
+		threeRef.current.meshActive.instanceMatrix.needsUpdate = true;
   }
 
   function drawMeshPoint({ isPointActive, mesh, meshIndex, point }) {
@@ -250,12 +252,11 @@ export const Cube = ({ points }) => {
     mesh.setMatrixAt(meshIndex, threeRef.current.matrix);
     mesh.setColorAt(
       meshIndex,
-      new THREE.Color(
-        pointColor({
-          isPointActive,
-          pointValue: pointValue,
-        }),
-      ),
+      pointColor({
+				isPointActive,
+				isThree: true,
+				pointValue: pointValue,
+			})
     );
   }
 

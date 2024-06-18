@@ -2,6 +2,20 @@ import { SortedSet, SortedSetUnion } from "./SortedSet.js";
 
 export const PointsModel = ({ data: absoluteValue }) => {
   // Assumes 3D right now
+  /*
+		[
+			[pointValue, x, y, z, isThresholdVisible, mark1Active, mark2Active, mark3Active, mark4Active, ...]
+		]
+		marks = [
+			points: [],
+		]
+		structuredAbsolute => mod function based on absolute instead
+		absoluteStructured => use above 1-3 index
+		absoluteActive => based on an index value
+		number of meshes?
+		active neurons interface?
+		play/pause/scroll in the planes
+	*/
 
   const base = Math.cbrt(absoluteValue.length);
   const absoluteActive = [];
@@ -229,7 +243,7 @@ export const PointsModel = ({ data: absoluteValue }) => {
     },
     off: (eventName, cb) => {
       const index = pointModel._listeners.findIndex(
-        (listener) => listener.eventName === eventName && listener.cb === cb,
+        (listener) => listener.eventName === eventName && listener.cb === cb
       );
       if (index > -1) pointModel._listeners.splice(index, 1);
     },
