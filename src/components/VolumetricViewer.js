@@ -8,7 +8,7 @@ import { PointsModel } from "./PointsModel.js";
 import DATAFILES from "./../../public/datafiles.json";
 
 export const VolumetricViewer = () => {
-  const [file, setFile] = useState(DATAFILES[2]);
+  const [file, setFile] = useState(DATAFILES[1]);
   const [data, setData] = useState(false);
 
   // Load whatever file we're looking to view
