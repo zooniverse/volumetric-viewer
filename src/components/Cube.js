@@ -19,7 +19,7 @@ import { SortedSetUnion } from "./SortedSet.js";
 
 export const Cube = ({ points }) => {
   const FPS_INTERVAL = 1000 / 60;
-  const NUM_MESH_POINTS = (Math.pow(points.base, 2) * 3) - (points.base * 3) + 1;
+  const NUM_MESH_POINTS = Math.pow(points.base, 2) * 3 - points.base * 3 + 1;
 
   // We need to create internal refs so that resizing + animation loop works properly
   const canvasRef = useRef(null);
@@ -79,12 +79,12 @@ export const Cube = ({ points }) => {
       meshPlane: new InstancedMesh(
         new BoxGeometry(1, 1, 1),
         new MeshBasicMaterial({ color: 0xffffff }),
-        NUM_MESH_POINTS
+        NUM_MESH_POINTS,
       ),
       meshActive: new InstancedMesh(
         new BoxGeometry(1, 1, 1),
         new MeshBasicMaterial({ color: 0xffffff }),
-        points.pointsActive.data.length
+        points.pointsActive.data.length,
       ),
       orbit: null,
       raycaster: new Raycaster(),
@@ -111,7 +111,7 @@ export const Cube = ({ points }) => {
 
     threeRef.current.orbit = new OrbitControls(
       threeRef.current.camera,
-      threeRef.current.renderer.domElement
+      threeRef.current.renderer.domElement,
     );
     threeRef.current.orbit.enableDamping = false;
     threeRef.current.orbit.enableZoom = true;
@@ -132,7 +132,7 @@ export const Cube = ({ points }) => {
   function render() {
     threeRef.current.raycaster.setFromCamera(
       threeRef.current.mouse,
-      threeRef.current.camera
+      threeRef.current.camera,
     );
 
     // Because the render loop is called every frame, we minimize work to only that needed for click
@@ -141,7 +141,7 @@ export const Cube = ({ points }) => {
       const isShift = threeRef.current.isShift;
 
       const intersectionScene = threeRef.current.raycaster.intersectObject(
-        threeRef.current.scene
+        threeRef.current.scene,
       );
 
       // reset modifiers
@@ -199,7 +199,7 @@ export const Cube = ({ points }) => {
 
     threeRef.current.renderer.render(
       threeRef.current.scene,
-      threeRef.current.camera
+      threeRef.current.camera,
     );
   }
 
@@ -208,9 +208,9 @@ export const Cube = ({ points }) => {
 
     const frames = points.planeFrameActive;
     const sets = frames.map((frame, dimension) =>
-      points.getPlaneSet({ dimension, frame })
+      points.getPlaneSet({ dimension, frame }),
     );
-		console.log('sets', sets);
+    console.log("sets", sets);
     meshPlaneSet.current = SortedSetUnion({ sets });
 
     meshPlaneSet.current.data.forEach((point, index) => {
@@ -233,7 +233,7 @@ export const Cube = ({ points }) => {
     threeRef.current.meshActive = new InstancedMesh(
       new BoxGeometry(1, 1, 1),
       new MeshBasicMaterial({ color: 0xffffff }),
-      points.pointsActive.data.length
+      points.pointsActive.data.length,
     );
 
     // render
@@ -267,7 +267,7 @@ export const Cube = ({ points }) => {
         isPointActive,
         isThree: true,
         pointValue: pointValue,
-      })
+      }),
     );
   }
 

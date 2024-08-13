@@ -235,7 +235,7 @@ export const PointsModel = ({ data: absoluteValue }) => {
     },
     off: (eventName, cb) => {
       const index = pointModel._listeners.findIndex(
-        (listener) => listener.eventName === eventName && listener.cb === cb
+        (listener) => listener.eventName === eventName && listener.cb === cb,
       );
       if (index > -1) pointModel._listeners.splice(index, 1);
     },

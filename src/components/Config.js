@@ -4,7 +4,7 @@ import { InputRangeDual } from "./InputRangeDual.js";
 export const Config = ({ file, fileOptions, onFileChange, points }) => {
   function downloadPoints() {
     const rows = points.pointsActive.data.map((point) =>
-      points.getPointCoordinates({ point })
+      points.getPointCoordinates({ point }),
     );
 
     rows.unshift(["x", "y", "z"]);

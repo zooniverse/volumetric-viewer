@@ -13,9 +13,12 @@ export const VolumetricViewer = () => {
 
   // Load whatever file we're looking to view
   useEffect(() => {
-    fetch(`/data/${file}.json`)
+    fetch(`/b64/${file}.json`)
       .then((res) => res.json())
-      .then((data) => setData(data));
+      .then((data) => {
+        // data is base64. Convert to Uint8 array
+        setData(Buffer.from(data, "base64"));
+      });
   }, [file]);
 
   // when selected file changes, load new data

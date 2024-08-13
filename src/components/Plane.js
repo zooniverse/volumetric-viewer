@@ -113,8 +113,8 @@ export const Plane = ({ dimension, points }) => {
       e.deltaY > 0 && frameCurrent > 0
         ? frameCurrent - 1
         : e.deltaY < 0 && frameCurrent < points.base - 1
-        ? frameCurrent + 1
-        : frameCurrent;
+          ? frameCurrent + 1
+          : frameCurrent;
 
     points.setPlaneFrameActive({ dimension, frame: frameNew });
   }
