@@ -17,9 +17,9 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { pointColor } from "./helper.js";
 import { SortedSetUnion } from "./SortedSet.js";
 
-export const Cube = ({ points }) => {
+export const Cube = ({ annotations, tool, viewer }) => {
   const FPS_INTERVAL = 1000 / 60;
-  const NUM_MESH_POINTS = Math.pow(points.base, 2) * 3 - points.base * 3 + 1;
+  const NUM_MESH_POINTS = Math.pow(viewer.base, 2) * 3 - viewer.base * 3 + 1;
 
   // We need to create internal refs so that resizing + animation loop works properly
   const canvasRef = useRef(null);
@@ -34,18 +34,22 @@ export const Cube = ({ points }) => {
     renderPlanePoints();
     threeRef.current.scene.add(threeRef.current.meshPlane);
 
-    renderActivePoints();
+    if (annotations) renderAnnotations();
     animate();
 
     // Setup State Listeners
-    points.on(`change:dimension:frame`, renderPlanePoints);
-    points.on(`change:threshold`, renderPlanePoints);
-    points.on(`change:pointsActive`, renderActivePoints);
+    annotations.on(`add:annotation`, addAnnotation);
+    annotations.on(`remove:annotation`, removeAnnotation);
+    annotations.on(`update:annotation`, updateAnnotation);
+    viewer.on(`change:dimension:frame`, renderPlanePoints);
+    viewer.on(`change:threshold`, renderPlanePoints);
 
     return () => {
-      points.off(`change:dimension:frame`, renderPlanePoints);
-      points.off(`change:threshold`, renderPlanePoints);
-      points.off(`change:pointsActive`, renderActivePoints);
+      annotations.off(`add:annotation`, addAnnotation);
+      annotations.off(`remove:annotation`, removeAnnotation);
+      annotations.off(`update:annotation`, updateAnnotation);
+      viewer.off(`change:dimension:frame`, renderPlanePoints);
+      viewer.off(`change:threshold`, renderPlanePoints);
     };
   }, []);
 
@@ -81,11 +85,7 @@ export const Cube = ({ points }) => {
         new MeshBasicMaterial({ color: 0xffffff }),
         NUM_MESH_POINTS,
       ),
-      meshActive: new InstancedMesh(
-        new BoxGeometry(1, 1, 1),
-        new MeshBasicMaterial({ color: 0xffffff }),
-        points.pointsActive.data.length,
-      ),
+      meshAnnotations: [],
       orbit: null,
       raycaster: new Raycaster(),
       renderer: null,
@@ -93,7 +93,7 @@ export const Cube = ({ points }) => {
     };
 
     // Setup camera, light, scene, and orbit controls
-    threeRef.current.camera.position.set(points.base, points.base, points.base);
+    threeRef.current.camera.position.set(viewer.base, viewer.base, viewer.base);
     threeRef.current.camera.lookAt(0, 0, 0);
 
     threeRef.current.light.position.set(0, 1, 0);
@@ -137,8 +137,8 @@ export const Cube = ({ points }) => {
 
     // Because the render loop is called every frame, we minimize work to only that needed for click
     if (threeRef.current.isClicked !== -1) {
-      const clickType = threeRef.current.isClicked;
-      const isShift = threeRef.current.isShift;
+      const button = threeRef.current.isClicked;
+      const shiftKey = threeRef.current.isShift;
 
       const intersectionScene = threeRef.current.raycaster.intersectObject(
         threeRef.current.scene,
@@ -148,51 +148,15 @@ export const Cube = ({ points }) => {
       threeRef.current.isClicked = -1;
       threeRef.current.isShift = false;
       if (intersectionScene.length > 0) {
-        let isActive = false;
+        const point =
+          meshPlaneSet.current.data[intersectionScene[0].instanceId];
 
-        // because the scene is rendered before activePoints, raycasting will return the plane point when there is both a plane point & active point at the same coordinate
-        if (
-          intersectionScene.length >= 2 &&
-          intersectionScene[0].object.name === "plane" &&
-          intersectionScene[1].object.name === "active"
-        ) {
-          const p1 = meshPlaneSet.current.data[intersectionScene[0].instanceId];
-          const p2 = points.pointsActive.data[intersectionScene[1].instanceId];
-          isActive = p1 === p2;
-        }
-
-        const type = intersectionScene[0].object.name;
-        const index = isActive
-          ? intersectionScene[1].instanceId
-          : intersectionScene[0].instanceId;
-
-        if (type === "active" || isActive) {
-          const point = points.pointsActive.data[index];
-
-          if (clickType === 0 && !isShift) {
-            // left click + no shift
-            const set = points.getConnectedPoints({ point });
-            points.resetPointsActive({ set });
-          } else if (clickType === 2) {
-            // right click
-            points.removePointActive({ point });
-          }
-        } else if (type === "plane") {
-          const point = meshPlaneSet.current.data[index];
-
-          if (clickType === 0) {
-            // left click
-            if (isShift) {
-              const set = points.getConnectedPoints({ point });
-              points.addPointsActive({ set });
-            } else {
-              const set = points.getConnectedPoints({ point });
-              points.resetPointsActive({ set });
-            }
-          } else if (clickType === 2) {
-            // right click
-            points.setPlaneActive({ point });
-          }
+        if (tool.events.click) {
+          tool.events.click({
+            button,
+            point,
+            shiftKey,
+          });
         }
       }
     }
@@ -206,18 +170,17 @@ export const Cube = ({ points }) => {
   function renderPlanePoints() {
     const t0 = performance.now();
 
-    const frames = points.planeFrameActive;
+    const frames = viewer.planeFrameActive;
     const sets = frames.map((frame, dimension) =>
-      points.getPlaneSet({ dimension, frame }),
+      viewer.getPlaneSet({ dimension, frame }),
     );
-    console.log("sets", sets);
+
     meshPlaneSet.current = SortedSetUnion({ sets });
 
     meshPlaneSet.current.data.forEach((point, index) => {
       drawMeshPoint({
-        isPointActive: false,
         mesh: threeRef.current.meshPlane,
-        meshIndex: index,
+        meshPointIndex: index,
         point,
       });
     });
@@ -227,46 +190,71 @@ export const Cube = ({ points }) => {
     threeRef.current.meshPlane.instanceColor.needsUpdate = true;
   }
 
-  function renderActivePoints() {
-    // remove the old meshActive since pointsActive changes
-    threeRef.current.scene.remove(threeRef.current.meshActive);
-    threeRef.current.meshActive = new InstancedMesh(
+  /*********** ANNOTATIONS *******************/
+  function renderAnnotations() {
+    annotations.annotations.forEach((annotation, annotationIndex) => {
+      addAnnotation({ annotation, annotationIndex });
+    });
+  }
+
+  function addAnnotation({ annotation, annotationIndex }) {
+    // Create the mesh
+    const mesh = new InstancedMesh(
       new BoxGeometry(1, 1, 1),
       new MeshBasicMaterial({ color: 0xffffff }),
-      points.pointsActive.data.length,
+      annotation.points.all.data.length,
     );
+    threeRef.current.meshAnnotations[annotationIndex] = mesh;
 
-    // render
-    points.pointsActive.data.forEach((point, index) => {
+    // Add points to the mesh
+    annotation.points.all.data.forEach((point, pointIndex) => {
       drawMeshPoint({
-        isPointActive: true,
-        mesh: threeRef.current.meshActive,
-        meshIndex: index,
+        annotationIndex,
+        mesh: mesh,
+        meshPointIndex: pointIndex,
         point,
       });
     });
 
-    //  add the mesh back to the scene
-    threeRef.current.meshActive.name = "active";
-    threeRef.current.scene.add(threeRef.current.meshActive);
-    threeRef.current.meshActive.instanceMatrix.needsUpdate = true;
+    // Add mesh to the scene
+    mesh.name = annotation.label;
+    threeRef.current.scene.add(mesh);
+    mesh.instanceMatrix.needsUpdate = true;
   }
 
-  function drawMeshPoint({ isPointActive, mesh, meshIndex, point }) {
-    const pointValue = points.getPointValue({ point });
-    const isVisible = points.isInThreshold({ point });
+  function updateAnnotation({ annotation, annotationIndex }) {
+    removeAnnotation({ annotationIndex });
+    addAnnotation({ annotation, annotationIndex });
+  }
+
+  function removeAnnotation({ annotationIndex }) {
+    const mesh = threeRef.current.meshAnnotations[annotationIndex];
+    threeRef.current.scene.remove(mesh);
+    threeRef.current.meshAnnotations.splice(annotationIndex, 1);
+  }
+
+  /*********** MESH *******************/
+  function drawMeshPoint({
+    annotationIndex = -1,
+    mesh,
+    meshPointIndex,
+    point,
+  }) {
+    const pointValue = viewer.getPointValue({ point });
+    const isVisible = viewer.isPointInThreshold({ point });
+
     const position = isVisible
-      ? getPositionInSpace({ coors: points.getPointCoordinates({ point }) })
+      ? getPositionInSpace({ coors: viewer.getPointCoordinates({ point }) })
       : [50000, 50000, 50000]; // basically remove from view
 
     threeRef.current.matrix.setPosition(...position);
-    mesh.setMatrixAt(meshIndex, threeRef.current.matrix);
+    mesh.setMatrixAt(meshPointIndex, threeRef.current.matrix);
     mesh.setColorAt(
-      meshIndex,
+      meshPointIndex,
       pointColor({
-        isPointActive,
         isThree: true,
-        pointValue: pointValue,
+        annotationIndex,
+        pointValue,
       }),
     );
   }
@@ -274,7 +262,7 @@ export const Cube = ({ points }) => {
   // Calculate the physical position in space
   function getPositionInSpace({ coors }) {
     const [x, y, z] = coors;
-    const numPointsAdjustment = points.base - 1;
+    const numPointsAdjustment = viewer.base - 1;
     const positionOffset = (numPointsAdjustment / 2) * -1;
 
     return [
@@ -284,7 +272,6 @@ export const Cube = ({ points }) => {
     ];
   }
 
-  // Interaction Functions
   function onMouseMove(e) {
     // Update the base ref() so that the animation loop handles the mouse move
     const { height, left, top, width } =

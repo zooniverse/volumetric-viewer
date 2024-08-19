@@ -1,7 +1,7 @@
 "use client";
 
-import { VolumetricViewer } from "./../components/VolumetricViewer.js";
+import { VolumetricViewerContainer } from "./../components/VolumetricViewerContainer.js";
 
 export default function Home() {
-  return <VolumetricViewer />;
+  return <VolumetricViewerContainer />;
 }
