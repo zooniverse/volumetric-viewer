@@ -1,8 +1,12 @@
 import {
+  AxesHelper,
+  BufferGeometry,
   BoxGeometry,
   Color,
   HemisphereLight,
   InstancedMesh,
+  Line,
+  LineBasicMaterial,
   Matrix4,
   MeshBasicMaterial,
   Object3D,
@@ -10,9 +14,11 @@ import {
   Raycaster,
   Scene,
   Vector2,
+  Vector3,
   WebGLRenderer,
 } from "three";
 import { useEffect, useLayoutEffect, useRef } from "react";
+import { Histogram } from "./Histogram.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { pointColor } from "./helper.js";
 import { SortedSetUnion } from "./SortedSet.js";
@@ -23,8 +29,10 @@ export const Cube = ({ annotations, tool, viewer }) => {
 
   // We need to create internal refs so that resizing + animation loop works properly
   const canvasRef = useRef(null);
+  const canvasAxesRef = useRef(null);
   const meshPlaneSet = useRef(null);
   const threeRef = useRef({});
+  const threeAxesRef = useRef({});
 
   // State Change management through useEffect()
   useEffect(() => {
@@ -43,6 +51,7 @@ export const Cube = ({ annotations, tool, viewer }) => {
     annotations.on(`update:annotation`, updateAnnotation);
     viewer.on(`change:dimension:frame`, renderPlanePoints);
     viewer.on(`change:threshold`, renderPlanePoints);
+    viewer.on(`save:screenshot`, saveScreenshot);
 
     return () => {
       annotations.off(`add:annotation`, addAnnotation);
@@ -50,6 +59,7 @@ export const Cube = ({ annotations, tool, viewer }) => {
       annotations.off(`update:annotation`, updateAnnotation);
       viewer.off(`change:dimension:frame`, renderPlanePoints);
       viewer.off(`change:threshold`, renderPlanePoints);
+      viewer.off(`save:screenshot`, saveScreenshot);
     };
   }, []);
 
@@ -62,6 +72,16 @@ export const Cube = ({ annotations, tool, viewer }) => {
       window.removeEventListener("mousemove", onMouseMove);
     };
   }, []);
+
+  // Save the viewer as a screenshot
+  function saveScreenshot() {
+    const encodedUri = encodeURI(canvasRef.current.toDataURL());
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "brainsweeper.png");
+    document.body.appendChild(link);
+    link.click();
+  }
 
   // Functions that do the actual work
   function setupCube() {
@@ -100,11 +120,12 @@ export const Cube = ({ annotations, tool, viewer }) => {
 
     threeRef.current.meshPlane.name = "plane";
 
-    threeRef.current.scene.background = new Color(0x222222);
+    threeRef.current.scene.background = new Color(0x000000);
     threeRef.current.scene.add(threeRef.current.light);
 
     threeRef.current.renderer = new WebGLRenderer({
       canvas: canvasRef.current,
+      preserveDrawingBuffer: true,
     });
     threeRef.current.renderer.setPixelRatio(window.devicePixelRatio);
     threeRef.current.renderer.setSize(width, height);
@@ -116,6 +137,73 @@ export const Cube = ({ annotations, tool, viewer }) => {
     threeRef.current.orbit.enableDamping = false;
     threeRef.current.orbit.enableZoom = true;
     threeRef.current.orbit.enablePan = false;
+
+    // View Axes
+    const half = viewer.base / 2;
+
+    const colors = [
+      0xffff00, // yellow
+      0x00ffff, // cyan
+      0xff00ff, // magenta
+    ];
+
+    const points = [
+      [
+        [1, 1, -1],
+        [-1, 1, -1],
+        [-1, 1, 1],
+      ],
+      [
+        [-1, 1, 1],
+        [-1, -1, 1],
+        [1, -1, 1],
+      ],
+      [
+        [1, -1, 1],
+        [1, -1, -1],
+        [1, 1, -1],
+      ],
+    ];
+
+    points.forEach((pointArr, index) => {
+      const _points = [];
+      pointArr.forEach((point) => {
+        _points.push(
+          new Vector3(point[0] * half, point[1] * half, point[2] * half),
+        );
+      });
+
+      const geometry = new BufferGeometry().setFromPoints(_points);
+      const material = new LineBasicMaterial({ color: colors[index] });
+      const line = new Line(geometry, material);
+      threeRef.current.scene.add(line);
+    });
+
+    // Axes setup
+    threeAxesRef.current = {
+      axis: new AxesHelper(100),
+      canvas: null,
+      light: new HemisphereLight(0xffffff, 0x888888, 3),
+      matrix: new Matrix4(),
+      mouse: new Vector2(1, 1),
+      orbit: null,
+      renderer: null,
+      scene: new Scene(),
+    };
+
+    // Setup Axes viewer details
+    const xColor = new Color(0xff00ff);
+    const yColor = new Color(0xffff00);
+    const zColor = new Color(0x00ffff);
+
+    threeAxesRef.current.axis.setColors(xColor, yColor, zColor);
+    threeAxesRef.current.scene.background = new Color(0x000000);
+    threeAxesRef.current.renderer = new WebGLRenderer({
+      canvas: canvasAxesRef.current,
+    });
+    threeAxesRef.current.renderer.setPixelRatio(window.devicePixelRatio);
+    threeAxesRef.current.renderer.setSize(150, 150);
+    threeAxesRef.current.scene.add(threeAxesRef.current.axis);
   }
 
   function animate() {
@@ -163,6 +251,11 @@ export const Cube = ({ annotations, tool, viewer }) => {
 
     threeRef.current.renderer.render(
       threeRef.current.scene,
+      threeRef.current.camera,
+    );
+
+    threeAxesRef.current.renderer.render(
+      threeAxesRef.current.scene,
       threeRef.current.camera,
     );
   }
@@ -304,12 +397,23 @@ export const Cube = ({ annotations, tool, viewer }) => {
   }
 
   return (
-    <div>
+    <div className="viewer-cube">
       <canvas
         ref={canvasRef}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
       />
+      <canvas
+        ref={canvasAxesRef}
+        style={{
+          position: "absolute",
+          left: "0",
+          top: "0",
+          width: "150px",
+          height: "150px",
+        }}
+      />
+      <Histogram annotations={annotations} tool={tool} viewer={viewer} />
     </div>
   );
 };

@@ -7,7 +7,8 @@ import { ModelAnnotations } from "./ModelAnnotations.js";
 import { ModelTool } from "./ModelTool.js";
 
 export const VolumetricViewerContainer = () => {
-  const [file, setFile] = useState(DATAFILES[1]);
+  const [file, setFile] = useState(DATAFILES[13]); // 128
+  // const [file, setFile] = useState(DATAFILES[1]); // 4
   const [data, setData] = useState(false);
   const [models, setModels] = useState({
     annotations: ModelAnnotations(),

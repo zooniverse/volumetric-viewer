@@ -1,5 +1,7 @@
 import { SortedSet } from "./SortedSet.js";
 
+const MAX_POINTS = 10000;
+
 export const AlgorithmAStar = ({
   annotation,
   point: pointOriginal,
@@ -9,9 +11,10 @@ export const AlgorithmAStar = ({
   const traversedPoints = [];
   const connectedPoints = SortedSet({ data: [pointOriginal] });
   const pointsToCheck = [pointOriginal];
-  let numPoints = 1000;
+  let numPoints = MAX_POINTS;
 
   function checkConnectedPoints() {
+    if (numPoints % 100 === 0) console.log("numPoints", numPoints);
     if (pointsToCheck.length === 0) return;
     if (--numPoints < 0) return;
 
@@ -22,7 +25,7 @@ export const AlgorithmAStar = ({
       pointValue <= pointValueStart + annotation.threshold;
 
     // if the point is not valid, we don't want to do anything else with it
-    if (!isPointValid) return checkConnectedPoints();
+    if (!isPointValid) return;
 
     // point is a connected point
     connectedPoints.add({ value: point });
@@ -52,9 +55,12 @@ export const AlgorithmAStar = ({
       pointsToCheck.push(pointPotential);
     }
 
-    return checkConnectedPoints();
+    return;
   }
 
-  checkConnectedPoints();
+  while (pointsToCheck.length > 0) {
+    checkConnectedPoints();
+  }
+
   return connectedPoints;
 };

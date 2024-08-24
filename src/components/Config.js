@@ -58,6 +58,10 @@ export const Config = ({
     link.click();
   }
 
+  function saveScreenshot() {
+    viewer.saveScreenshot();
+  }
+
   return (
     <>
       <h3 style={{ paddingBottom: "10px" }}>Volumetric File</h3>
@@ -86,26 +90,12 @@ export const Config = ({
       <br />
       <br />
 
-      {viewer.dimensions.map((dimensionName, dimension) => {
-        return (
-          <div key={`dimension-${dimensionName}`}>
-            <h3>{dimensionName.toUpperCase()} Plane Coordinate</h3>
-            <InputRange
-              onChange={(value) => {
-                viewer.setPlaneFrameActive({ dimension, frame: value - 1 });
-              }}
-              valueCurrent={viewer.getPlaneFrameActive({ dimension }) + 1}
-              valueMax={viewer.base}
-              valueMin={1}
-            />
-            <br />
-            <br />
-          </div>
-        );
-      })}
-
       <button onClick={downloadPoints} style={{ marginBottom: "20px" }}>
         Download Active Points
+      </button>
+
+      <button onClick={saveScreenshot} style={{ marginBottom: "20px" }}>
+        Save Screenshot
       </button>
 
       {_annotations.map((annotation, index) => {
