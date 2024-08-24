@@ -59,17 +59,19 @@ export const VolumetricViewer = ({
           tool={models.tool}
           viewer={models.viewer}
         />
-        {models.viewer.dimensions.map((dimensionName, dimension) => {
-          return (
-            <Plane
-              annotations={models.annotations}
-              dimension={dimension}
-              key={`dimension-${dimensionName}`}
-              tool={models.tool}
-              viewer={models.viewer}
-            />
-          );
-        })}
+        <div className="viewer-planes">
+          {models.viewer.dimensions.map((dimensionName, dimension) => {
+            return (
+              <Plane
+                annotations={models.annotations}
+                dimension={dimension}
+                key={`dimension-${dimensionName}`}
+                tool={models.tool}
+                viewer={models.viewer}
+              />
+            );
+          })}
+        </div>
       </div>
     </>
   );

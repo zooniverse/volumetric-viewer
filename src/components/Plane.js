@@ -1,11 +1,10 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { pointColor } from "./helper.js";
 
 const BACKGROUND_COLOR = "#222";
 
 export const Plane = ({ annotations, dimension, tool, viewer }) => {
-  const CANVAS_PADDING = 25; // extra space around element
-
+  const [frame, setFrame] = useState(viewer.getPlaneFrameActive({ dimension }));
   const canvasRef = useRef(null);
   const canvasLength = useRef(0);
   const frameCanvas = document.createElement("canvas");
@@ -42,7 +41,8 @@ export const Plane = ({ annotations, dimension, tool, viewer }) => {
     // Use parent element to infer frame size
     const { width, height } =
       canvasRef.current.parentElement.getBoundingClientRect();
-    canvasLength.current = (width < height ? width : height) - CANVAS_PADDING;
+
+    canvasLength.current = width < height ? height : width;
     const ctx = canvasRef.current.getContext("2d");
     ctx.canvas.width = canvasLength.current;
     ctx.canvas.height = canvasLength.current;
@@ -52,7 +52,12 @@ export const Plane = ({ annotations, dimension, tool, viewer }) => {
   }
 
   // Functions that do the actual work
-  async function drawFrame() {
+  async function drawFrame(e) {
+    // catches events and sets relevant frame if necessary
+    if (e && e.frame !== undefined) {
+      setFrame(e.frame);
+    }
+
     // draw to offscreen canvas
     const context = frameCanvas.getContext("2d");
     const frame = viewer.getPlaneFrame({ dimension });
@@ -120,9 +125,14 @@ export const Plane = ({ annotations, dimension, tool, viewer }) => {
     viewer.setPlaneFrameActive({ dimension, frame: frameNew });
   }
 
+  function inChange(e) {
+    viewer.setPlaneFrameActive({ dimension, frame: e.target.value });
+  }
+
   return (
     <div>
       <canvas
+        className={`plane-canvas-${dimension}`}
         width={viewer.base}
         height={viewer.base}
         ref={canvasRef}
@@ -130,6 +140,14 @@ export const Plane = ({ annotations, dimension, tool, viewer }) => {
         onContextMenu={onClick}
         onWheel={onWheel}
       ></canvas>
+      <input
+        type="range"
+        min="0"
+        max={viewer.base - 1}
+        orient="vertical"
+        onChange={inChange}
+        value={frame}
+      />
     </div>
   );
 };

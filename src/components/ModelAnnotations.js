@@ -1,6 +1,6 @@
 import { SortedSet, SortedSetUnion } from "./SortedSet.js";
 
-const THRESHOLD_DEFAULT = 10;
+const THRESHOLD_DEFAULT = 30;
 
 const AnnotationBase = ({ annotations, point }) => {
   return {
@@ -21,7 +21,7 @@ const History = {
     History.state.push(action);
   },
   undo: ({ historyItem }) => {
-		// TRAVDO: Still to implement
+    // TRAVDO: Still to implement
     console.log("History.undo() historyItem", historyItem);
 
     if (historyItem.action === "annotation.add") {
@@ -31,7 +31,7 @@ const History = {
     }
   },
   redo: () => {
-		// TRAVDO: Still to implement
+    // TRAVDO: Still to implement
     console.log("History.redo() historyItem", historyItem);
 
     if (historyItem.action === "annotation.add") {
@@ -221,7 +221,7 @@ export const ModelAnnotations = () => {
         },
       },
     },
-		// Listeners
+    // Listeners
     _listeners: [],
     publish: (eventName, data) => {
       annotationModel._listeners.forEach((listener) => {

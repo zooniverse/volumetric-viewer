@@ -6,15 +6,15 @@ export const ModelViewer = () => {
   const pointModel = {
     // data
     base: 0,
-    data: [],
-    dimensions: ["x", "y", "z"],
-    points: [],
-    //
-    planesAbsoluteSets: [[], [], []],
-    planeFrameActive: [0, 0, 0],
     baseFrames: [[], [], []],
     baseFrameMod: [0, 0, 0],
-    //
+    data: [],
+    dimensions: ["x", "y", "z"],
+    planesAbsoluteSets: [[], [], []],
+    planeFrameActive: [0, 0, 0],
+    points: [],
+    threshold: { min: 0, max: 255 },
+    // methods
     initialize: ({ annotations, data, tool }) => {
       pointModel.data = data;
       pointModel.base = Math.cbrt(data.length);
@@ -82,7 +82,7 @@ export const ModelViewer = () => {
         }
       }
     },
-		// Methods
+    // Methods
     getPointAnnotationIndex: ({ point }) => {
       return pointModel.points[point][5];
     },
@@ -109,17 +109,16 @@ export const ModelViewer = () => {
     getPointValue: ({ point }) => {
       return pointModel.points[point][0];
     },
-    ////////////////////////////////////////////////
-    threshold: { min: 0, max: 255 },
+    // Threshold / Brightness Range
     setThreshold: ({ min, max }) => {
-			// TRAVDO: Rework this based on the new data format from initialize()
       pointModel.threshold.min = min;
       pointModel.threshold.max = max;
+      pointModel.points.forEach((point, i) => {
+        point[4] = min <= point[0] && max >= point[0];
+      });
       pointModel.publish(`change:threshold`, { min, max });
     },
-
-    // frame =
-    ////////////////////////////////////////////////
+    // Planes
     getPlaneFrame: ({ dimension = 0, frame }) => {
       frame = frame ?? pointModel.planeFrameActive[dimension];
       // get the base frame, then mod each point to get the absolute plane view
@@ -145,6 +144,10 @@ export const ModelViewer = () => {
       pointModel.planeFrameActive[dimension] = frame;
       pointModel.publish(`change:dimension-${dimension}:frame`, { frame });
       pointModel.publish(`change:dimension:frame`, { dimension, frame });
+    },
+    // Screenshot specific
+    saveScreenshot: () => {
+      pointModel.publish(`save:screenshot`);
     },
     // Listeners
     _listeners: [],
