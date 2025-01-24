@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { AnnotationView } from "./AnnotationView.js";
-import { InputRange } from "./InputRange.js";
-import { InputRangeDual } from "./InputRangeDual.js";
 
 export const Config = ({
   annotations,
@@ -62,6 +60,10 @@ export const Config = ({
     viewer.saveScreenshot();
   }
 
+  function generateScreenshots() {
+    viewer.generateScreenshots();
+  }
+
   return (
     <>
       <h3 style={{ paddingBottom: "10px" }}>Volumetric File</h3>
@@ -77,26 +79,14 @@ export const Config = ({
       </select>
       <br />
 
-      <h3>Brightness Range</h3>
-      <InputRangeDual
-        valueMax={255}
-        valueMin={0}
-        valueMaxCurrent={viewer.threshold.max}
-        valueMinCurrent={viewer.threshold.min}
-        onChange={(min, max) => {
-          viewer.setThreshold({ min, max });
-        }}
-      />
-      <br />
-      <br />
-
-      <button onClick={downloadPoints} style={{ marginBottom: "20px" }}>
-        Download Active Points
-      </button>
-
       <button onClick={saveScreenshot} style={{ marginBottom: "20px" }}>
         Save Screenshot
       </button>
+
+      {/* <button onClick={generateScreenshots} style={{ marginBottom: "20px" }}>
+        Generate Screenshots
+      </button> */}
+
 
       {_annotations.map((annotation, index) => {
         return (

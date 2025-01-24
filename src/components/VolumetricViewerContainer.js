@@ -7,7 +7,8 @@ import { ModelAnnotations } from "./ModelAnnotations.js";
 import { ModelTool } from "./ModelTool.js";
 
 export const VolumetricViewerContainer = () => {
-  const [file, setFile] = useState(DATAFILES[13]); // 128
+  const [file, setFile] = useState(DATAFILES[0]); // 128
+  const [generateScreenshots, setGenerateScreenshots] = useState(false);
   // const [file, setFile] = useState(DATAFILES[1]); // 4
   const [data, setData] = useState(false);
   const [models, setModels] = useState({
@@ -28,6 +29,7 @@ export const VolumetricViewerContainer = () => {
 
   // when selected file changes, load new data
   const onFileChange = ({ file }) => {
+    setGenerateScreenshots(true);
     setData(false);
     setFile(file);
   };
@@ -43,6 +45,7 @@ export const VolumetricViewerContainer = () => {
       <VolumetricViewer
         config={config}
         data={data}
+        generateScreenshots={generateScreenshots}
         file={file}
         fileOptions={DATAFILES}
         models={models}

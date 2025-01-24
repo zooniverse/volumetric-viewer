@@ -146,6 +146,9 @@ export const ModelViewer = () => {
       pointModel.publish(`change:dimension:frame`, { dimension, frame });
     },
     // Screenshot specific
+    generateScreenshots: () => {
+      pointModel.publish(`generate:screenshots`);
+    },
     saveScreenshot: () => {
       pointModel.publish(`save:screenshot`);
     },

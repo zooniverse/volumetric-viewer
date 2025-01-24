@@ -6,6 +6,7 @@ import { Plane } from "./Plane.js";
 export const VolumetricViewer = ({
   config,
   data,
+  generateScreenshots,
   file,
   fileOptions,
   models,
@@ -56,22 +57,13 @@ export const VolumetricViewer = ({
       <div className="viewer">
         <Cube
           annotations={models.annotations}
+          file={file}
+          fileOptions={fileOptions}
+          generateScreenshots={generateScreenshots}
+          onFileChange={onFileChange}
           tool={models.tool}
           viewer={models.viewer}
         />
-        <div className="viewer-planes">
-          {models.viewer.dimensions.map((dimensionName, dimension) => {
-            return (
-              <Plane
-                annotations={models.annotations}
-                dimension={dimension}
-                key={`dimension-${dimensionName}`}
-                tool={models.tool}
-                viewer={models.viewer}
-              />
-            );
-          })}
-        </div>
       </div>
     </>
   );
